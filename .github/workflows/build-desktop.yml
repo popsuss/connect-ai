@@ -1,0 +1,55 @@
+# Connect AI Desktop — 맥(.dmg) · 윈도우(.exe) 설치파일 자동 빌드.
+# 트리거: 'desktop-v*' 태그 푸시 또는 수동 실행(Actions 탭 > Run workflow).
+# 결과: 각 OS 설치파일이 Actions 아티팩트 + (태그면) GitHub Release 에 첨부됨.
+name: Build Connect AI Desktop
+
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        working-directory: desktop
+        run: npm install
+
+      - name: Bundle (esbuild)
+        working-directory: desktop
+        run: npm run build
+
+      - name: Package installer (electron-builder)
+        working-directory: desktop
+        run: npx electron-builder --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: connect-ai-${{ matrix.os }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+          if-no-files-found: warn
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; script-src 'self';" />
+  <title>Connect AI</title>
+  <!-- 익스텐션(assets/webview/sidebar.html) 디자인 그대로 -->
+  <link rel="stylesheet" href="./extension-ui.css" />
+  <link rel="stylesheet" href="./supplement.css" />
+</head>
+<body>
+  <!-- 부팅 -->
+  <div id="boot">
+    <div class="boot-logo">✦ CONNECT&nbsp;AI<span class="cur">_</span></div>
+    <div class="boot-sub" id="bootSub">INITIALIZING</div>
+    <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  </div>
+
+  <!-- 헤더 (익스텐션 .header 구조 그대로) -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">✦</div>
+      <span class="brand">Connect AI</span>
+      <span class="brand-suffix" id="brandSuffix"></span>
+    </div>
+    <div class="header-right">
+      <select id="modelSel" title="모델 선택"></select>
+      <button class="btn-icon" id="corporateBtn" title="1인 기업 모드 — 켜면 동료들이 함께 일합니다" style="opacity:.5">👔</button>
+      <button class="btn-icon" id="micBtn" title="음성 — 야 커넥트">🎙️</button>
+      <button class="btn-icon" id="plazaBtn" title="AI Agent University">🏫</button>
+      <button class="btn-icon" id="newChatBtn" title="새 대화">+</button>
+      <button class="btn-icon" id="settingsBtn" title="설정">⚙️</button>
+    </div>
+  </div>
+  <div class="thinking-bar" id="thinkingBar"></div>
+
+  <!-- 채팅 (익스텐션 .chat 그대로) -->
+  <div class="chat" id="chat"></div>
+
+  <!-- 입력 (익스텐션 .input-wrap/.input-box 그대로) -->
+  <div class="input-wrap"><div class="input-box">
+    <textarea id="input" rows="1" placeholder="무엇을 만들어 드릴까요?"></textarea>
+    <div class="input-footer">
+      <span class="input-hint" id="inputHint">Enter 전송 · Shift+Enter 줄바꿈 · "야 커넥트" 음성</span>
+      <div class="input-btns">
+        <button class="stop-btn" id="stopBtn" title="생성 중단" hidden>■</button>
+        <button class="send-btn" id="sendBtn" title="전송 (Enter)">↑</button>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- 광장 오버레이 -->
+  <div class="overlay hidden" id="plazaPanel">
+    <div class="overlay-card classroom-card">
+      <div class="overlay-head">⬡ AI AGENT UNIVERSITY <span class="cls-count" id="plazaStatus">대기 중</span><button class="overlay-x" data-close="plazaPanel">✕</button></div>
+
+      <!-- 명찰 + 등교 -->
+      <div class="nametag">
+        <span class="nt-pin">📛</span>
+        <input id="plazaEmoji" class="nt-emoji" maxlength="2" title="아바타 이모지" />
+        <div class="nt-fields">
+          <input id="plazaCompany" class="nt-company" placeholder="우리 반 / 회사 이름" />
+          <input id="plazaAgentName" class="nt-agent" placeholder="내 에이전트 이름" />
+        </div>
+        <button id="plazaToggle" class="oc-primary nt-go">🏫 등교</button>
+      </div>
+
+      <!-- 교실 -->
+      <div class="classroom" id="classroom">
+        <div class="topic-bar">
+          <input id="topicInput" placeholder="🧑‍🏫 선생님(나)이 낼 문제·주제를 입력 — 에이전트들이 토론·해결합니다" autocomplete="off" />
+          <button id="topicBtn" class="oc-primary">📢 문제 내기</button>
+        </div>
+        <div class="blackboard">
+          <div class="bb-title">◈ HOLO-BOARD · 현재 주제</div>
+          <div class="bb-line" id="bbLine">— 선생님의 문제를 기다리는 중 —</div>
+        </div>
+        <div class="teacher-row">
+          <button id="gradeBtn" class="teacher-btn">🧑‍🏫 채점 — 우등생 뽑기</button>
+          <button id="friendBtn" class="friend-btn">👥 친구 에이전트 부르기</button>
+          <div class="leaderboard" id="leaderboard"></div>
+        </div>
+        <div class="present-strip" id="desks">
+          <div class="cls-empty">아직 아무도 등교 안 했어요 🙋</div>
+        </div>
+        <div class="feed-label">💬 클래스 피드 <span class="feed-sub">— 에이전트들의 대화가 쌓입니다</span></div>
+        <div class="feed" id="feed"></div>
+      </div>
+      <div class="muted cls-foot">🤖 에이전트들이 자율로 토론합니다 · 🧑‍🏫 선생님(나)이 문제를 냅니다</div>
+    </div>
+  </div>
+
+  <!-- 설정 오버레이 -->
+  <div class="overlay hidden" id="settingsPanel">
+    <div class="overlay-card">
+      <div class="overlay-head">⚙️ 설정 <button class="overlay-x" data-close="settingsPanel">✕</button></div>
+      <label>에이전트 인사말 <span class="muted small">(비우면 기본 · {name}=이름)</span><input id="cfgGreeting" placeholder="안녕하세요, {name}입니다. 무엇을 도와드릴까요?" /></label>
+      <label>대학 DB URL (Firebase RTDB)<input id="cfgDbUrl" placeholder="https://...firebasedatabase.app" /></label>
+      <label>LLM 주소 (비우면 자동 감지)<input id="cfgLlmBase" placeholder="http://127.0.0.1:1234 또는 11434" /></label>
+      <label class="row"><input type="checkbox" id="cfgVoice" /> 음성 응답(TTS) 켜기</label>
+      <button id="saveCfg" class="oc-primary">저장</button>
+      <p class="muted small">· 이름·회사·아바타 → 🏫 대학 <b>명찰</b>에서<br>· 모델 → 상단 <b>드롭다운</b>에서</p>
+    </div>
+  </div>
+
+  <!-- 1인 기업 모드 비밀번호 -->
+  <div class="overlay hidden" id="pwPanel">
+    <div class="overlay-card" style="max-width:380px">
+      <div class="overlay-head">🔒 1인 기업 모드 <button class="overlay-x" data-close="pwPanel">✕</button></div>
+      <p class="muted">비밀번호를 입력하세요.</p>
+      <input id="pwInput" type="password" inputmode="numeric" placeholder="••••" autocomplete="off" />
+      <div id="pwMsg" class="muted" style="color:var(--red);min-height:14px"></div>
+      <button id="pwOk" class="oc-primary">잠금 해제</button>
+    </div>
+  </div>
+
+  <script src="../../out/renderer.js"></script>
+</body>
+</html>

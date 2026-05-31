@@ -1,0 +1,164 @@
+/* 데스크톱 전용 보충 — 익스텐션 CSS(extension-ui.css)에 없는 것만.
+   토큰(var(--accent) 등)은 extension-ui.css 의 :root 를 그대로 씀. */
+
+/* 마이크 활성 */
+.btn-icon.on { color: #000 !important; background: var(--accent) !important; border-color: var(--accent) !important; box-shadow: 0 0 16px var(--accent-glow); }
+
+/* 에이전트 선택 레일 */
+.agent-rail { display: flex; gap: 7px; padding: 9px 14px; overflow-x: auto; flex-shrink: 0;
+  border-bottom: 1px solid var(--border); background: rgba(0,0,0,.25); }
+.agent-rail::-webkit-scrollbar { height: 0; }
+.agent-chip { display: flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;
+  background: rgba(22,22,28,.6); border: 1px solid var(--border2); border-radius: 20px; padding: 4px 11px 4px 5px;
+  color: var(--text-dim); font-family: inherit; font-size: 12px; transition: .2s; }
+.agent-chip:hover { color: var(--text-bright); border-color: var(--ag); }
+.agent-chip .ac-emoji { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; background: color-mix(in srgb, var(--ag) 22%, transparent); border: 1px solid color-mix(in srgb, var(--ag) 50%, transparent); }
+.agent-chip.active { color: #fff; border-color: var(--ag); background: color-mix(in srgb, var(--ag) 14%, rgba(22,22,28,.6));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ag) 35%, transparent); }
+.agent-chip.active .ac-emoji { background: var(--ag); border-color: var(--ag); box-shadow: 0 0 10px var(--ag); }
+
+/* 부팅 시퀀스 */
+#boot { position: fixed; inset: 0; z-index: 200; background: #000; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px; transition: opacity .6s; }
+#boot.done { opacity: 0; pointer-events: none; }
+.boot-logo { font-family: var(--mono, 'SF Mono', monospace); font-size: 32px; font-weight: 800; letter-spacing: 7px; color: var(--accent); text-shadow: 0 0 24px var(--accent-glow); }
+.boot-logo .cur { animation: blink 1s steps(1) infinite; } @keyframes blink { 50% { opacity: 0; } }
+.boot-sub { font-family: 'SF Mono', monospace; font-size: 11px; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; min-height: 14px; }
+.boot-bar { width: 260px; height: 3px; background: rgba(0,255,65,.12); border-radius: 2px; overflow: hidden; }
+.boot-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent2), var(--accent)); box-shadow: 0 0 14px var(--accent-glow); transition: width .25s ease; }
+
+/* 오버레이 패널 (광장·설정) */
+.overlay { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.6); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 24px; }
+.overlay.hidden { display: none; }
+.overlay-card { width: 100%; max-width: 540px; max-height: 82vh; display: flex; flex-direction: column; gap: 14px;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px; padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 30px var(--accent-glow); }
+.overlay-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--text-bright); }
+.overlay-x { background: transparent; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; }
+.overlay-x:hover { color: var(--accent); }
+.overlay-card label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.overlay-card label.row { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+.overlay-card input[type=text], .overlay-card input:not([type]) { background: var(--input-bg); border: 1px solid var(--border2);
+  border-radius: 9px; color: var(--text-bright); padding: 11px 13px; outline: none; font-family: inherit; }
+.overlay-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+.oc-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #000;
+  font-weight: 800; padding: 11px 18px; border-radius: 9px; cursor: pointer; letter-spacing: .5px; }
+.oc-row { display: flex; gap: 8px; }
+.oc-row input { flex: 1; background: var(--input-bg); border: 1px solid var(--border2); border-radius: 9px; color: var(--text-bright); padding: 11px 13px; outline: none; }
+/* 명찰 (Name Tag) — 학교 느낌 */
+.nametag { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0,255,65,.07), rgba(0,255,65,.02)); border: 1px solid rgba(0,255,65,.25); }
+.nt-pin { font-size: 16px; }
+.nt-emoji { width: 44px !important; height: 44px; text-align: center; font-size: 20px !important; border-radius: 10px !important;
+  background: rgba(0,0,0,.4) !important; border: 1px solid var(--border2) !important; color: var(--text-bright) !important; }
+.nt-fields { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.nt-company { font-weight: 700; color: var(--text-bright) !important; }
+.nt-company, .nt-agent { background: rgba(0,0,0,.3) !important; border: 1px solid var(--border2) !important; border-radius: 8px !important; color: var(--text) !important; padding: 7px 11px !important; outline: none; font-family: inherit; }
+.nt-agent { font-size: 12px; }
+.nt-company:focus, .nt-agent:focus, .nt-emoji:focus { border-color: var(--accent) !important; }
+.nt-sub { font-size: 11px; letter-spacing: .5px; margin-top: 2px; }
+
+.nt-go { white-space: nowrap; align-self: stretch; }
+
+/* ── 🏫 클래스룸 ── */
+.classroom-card { max-width: 820px !important; width: 94vw; max-height: 88vh !important; }
+.cls-count { font-size: 11px; color: var(--text-dim); font-weight: 400; margin-left: 10px; flex: 1; }
+.classroom { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding: 2px; }
+.classroom > * { flex-shrink: 0; }  /* 보드·바 등이 눌려서 글자 잘리는 것 방지 */
+.cls-foot { text-align: center; font-size: 11px; padding-top: 2px; }
+
+/* 홀로그램 보드 — 네온 + 스캔라인 + 그리드 */
+.blackboard { background: linear-gradient(160deg, rgba(0,40,32,.55), rgba(0,12,18,.72)); border: 1px solid rgba(0,255,200,.35);
+  border-radius: 12px; box-shadow: inset 0 0 40px rgba(0,255,180,.08), 0 0 30px rgba(0,255,150,.15); padding: 16px 22px; position: relative; overflow: hidden; }
+.blackboard::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(rgba(0,255,160,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,160,.05) 1px, transparent 1px);
+  background-size: 22px 22px; -webkit-mask-image: linear-gradient(transparent, #000 45%); }
+.blackboard::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; top: 0;
+  background: linear-gradient(90deg, transparent, rgba(0,255,180,.6), transparent); animation: holoScan 3.6s linear infinite; }
+@keyframes holoScan { 0% { top: -2px; } 100% { top: 100%; } }
+.bb-title { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: rgba(0,255,200,.55); margin-bottom: 10px; position: relative; z-index: 1; }
+.bb-line { font-family: var(--mono); font-size: 16px; line-height: 1.55; color: #d6fff0;
+  text-shadow: 0 0 10px rgba(0,255,180,.3); min-height: 26px; word-break: break-word; position: relative; z-index: 1; }
+.bb-line b { color: #2dffb0; text-shadow: 0 0 12px rgba(45,255,176,.6); }
+
+/* 주제 발표 바 */
+.topic-bar { display: flex; gap: 8px; }
+.topic-bar input { flex: 1; background: var(--input-bg); border: 1px solid rgba(0,255,200,.3); border-radius: 10px;
+  color: var(--text-bright); padding: 11px 14px; outline: none; font-family: inherit; font-size: 13px; }
+.topic-bar input:focus { border-color: #2dffb0; box-shadow: 0 0 0 2px rgba(45,255,176,.18); }
+.topic-bar .oc-primary { background: linear-gradient(135deg, #2dffb0, #00b38f); white-space: nowrap; }
+
+/* 선생님 채점 + 리더보드 */
+.teacher-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.teacher-btn { background: linear-gradient(135deg, #ffcf4d, #e0962a); border: none; color: #1a1206; font-weight: 800;
+  padding: 10px 16px; border-radius: 10px; cursor: pointer; letter-spacing: .3px; box-shadow: 0 0 18px rgba(251,191,36,.3); white-space: nowrap; }
+.teacher-btn:hover { filter: brightness(1.08); } .teacher-btn:disabled { opacity: .6; cursor: default; }
+.friend-btn { background: rgba(22,32,62,.8); border: 1px solid rgba(0,255,200,.4); color: #2dffb0; font-weight: 700;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.friend-btn:hover { box-shadow: 0 0 14px rgba(45,255,176,.3); }
+.friend-btn.on { background: linear-gradient(135deg, #2dffb0, #00b38f); color: #04140f; border-color: transparent; }
+.leaderboard { flex: 1; min-width: 180px; }
+.lb-title { font-size: 11px; letter-spacing: 2px; color: var(--gold); margin-bottom: 5px; }
+.lb-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12.5px; }
+.lb-rank { width: 20px; text-align: center; }
+.lb-name { flex: 1; color: var(--text-bright); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-pts { color: var(--gold); font-weight: 700; }
+
+/* 책상 그리드 */
+.present-strip { display: flex; gap: 20px; flex-wrap: wrap; padding: 22px 6px 6px; }
+.cls-empty { grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 36px 10px; font-size: 13px; }
+.desk { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.student { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 30px;
+  background: linear-gradient(135deg, rgba(0,255,150,.14), rgba(0,10,14,.6)); border: 1.5px solid rgba(0,255,180,.3); position: relative;
+  transition: transform .2s; animation: floaty 3.6s ease-in-out infinite; backdrop-filter: blur(2px); }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.desk.pres .student { border-color: var(--gold); box-shadow: 0 0 20px rgba(251,191,36,.45); }
+.desk.vice .student { border-color: #67e8f9; box-shadow: 0 0 18px rgba(103,232,249,.4); }
+.st-badge { position: absolute; top: -12px; right: -10px; font-size: 19px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.7)); }
+.st-tag { font-size: 12px; color: var(--text-bright); font-weight: 700; max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-role { font-size: 10px; letter-spacing: 1px; color: var(--text-dim); }
+.st-role.pres { color: var(--gold); } .st-role.vice { color: #67e8f9; }
+/* 네온 발광 패드 (홀로 플랫폼) */
+.desk::after { content: ''; width: 74px; height: 16px; border-radius: 50%; margin-top: 4px;
+  background: radial-gradient(ellipse, rgba(0,255,150,.45), rgba(0,255,150,.05) 70%, transparent); box-shadow: 0 0 18px rgba(0,255,150,.35); }
+.desk.pres::after { background: radial-gradient(ellipse, rgba(251,191,36,.5), transparent 70%); box-shadow: 0 0 22px rgba(251,191,36,.45); }
+.desk.vice::after { background: radial-gradient(ellipse, rgba(103,232,249,.5), transparent 70%); box-shadow: 0 0 22px rgba(103,232,249,.45); }
+/* 말할 때 폴짝 */
+.desk.talking .student { animation: hop .5s ease infinite; }
+@keyframes hop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+/* 말풍선 */
+.bubble-slot { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 6; width: 160px; display: flex; justify-content: center; pointer-events: none; }
+.sb { background: #fff; color: #16181d; font-size: 11.5px; line-height: 1.35; padding: 7px 11px; border-radius: 13px; max-width: 160px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.45); animation: pop .22s ease; position: relative; }
+.sb::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #fff; }
+@keyframes pop { from { opacity: 0; transform: scale(.8) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+/* 💬 SNS 클래스 피드 */
+.feed-label { font-size: 12px; letter-spacing: 1px; color: var(--accent); margin: 6px 2px 2px; font-weight: 700; }
+.feed-sub { color: var(--text-dim); font-weight: 400; letter-spacing: 0; }
+.feed { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; padding: 6px 4px 4px; }
+.post { display: flex; gap: 11px; padding: 11px 13px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border2);
+  animation: slideIn .3s cubic-bezier(.16,1,.3,1); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.post-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(0,255,150,.15), rgba(0,10,14,.6)); border: 1px solid rgba(0,255,180,.3); }
+.post-body { flex: 1; min-width: 0; }
+.post-head { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+.post-name { font-weight: 700; color: var(--text-bright); font-size: 13px; }
+.post-role { font-size: 10px; color: var(--text-dim); background: rgba(255,255,255,.06); padding: 1px 7px; border-radius: 8px; }
+.post-time { font-size: 10px; color: var(--text-dim); margin-left: auto; }
+.post-text { font-size: 13.5px; line-height: 1.5; color: var(--text); word-break: break-word; }
+/* 선생님 문제 강조 */
+.post-teacher { background: linear-gradient(135deg, rgba(0,255,180,.1), rgba(0,40,30,.4)); border-color: rgba(0,255,180,.4); }
+.post-teacher .post-av { background: linear-gradient(135deg, #2dffb0, #00926f); border-color: transparent; }
+.post-teacher .post-name { color: #2dffb0; }
+/* 채점 결과 강조 */
+.post-grade { background: linear-gradient(135deg, rgba(251,191,36,.12), rgba(40,30,4,.4)); border-color: rgba(251,191,36,.4); }
+.post-grade .post-av { background: linear-gradient(135deg, var(--gold), #b8860b); border-color: transparent; }
+.post-grade .post-name { color: var(--gold); }
+.plaza-feed { flex: 1; min-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.pmsg { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 9px 13px; font-size: 13px; }
+.pmsg .who { display: block; font-size: 10px; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 2px; text-transform: uppercase; }
+.muted { color: var(--text-dim); font-size: 12px; }
