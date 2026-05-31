@@ -37,8 +37,8 @@ jobs:
       - name: Package installer (electron-builder)
         working-directory: desktop
         run: npx electron-builder --publish never
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # GH_TOKEN 일부러 제외 — electron-builder 가 GitHub 퍼블리시를 시도하다
+        # sparse-checkout 환경에서 repo 감지 실패로 크래시(provider null)하는 것 방지.
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

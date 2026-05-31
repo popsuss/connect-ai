@@ -5,6 +5,7 @@
   "main": "out/main.js",
   "author": "EZER AI",
   "license": "UNLICENSED",
+  "repository": { "type": "git", "url": "https://github.com/wonseokjung/private_connectai.git" },
   "scripts": {
     "build": "node esbuild.mjs",
     "typecheck": "tsc --noEmit -p .",
