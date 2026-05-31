@@ -1,5 +1,5 @@
 // 에이전트 페르소나 시스템 프롬프트 — 익스텐션의 AGENTS 데이터를 그대로 재사용.
-import { AGENTS } from '../../../src/agents';
+import { AGENTS } from '../agents';
 
 export { AGENTS };
 export const SPECIALIST_IDS = ['youtube', 'instagram', 'designer', 'developer', 'business', 'editor', 'writer', 'researcher'];

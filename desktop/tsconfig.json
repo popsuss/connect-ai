@@ -11,5 +11,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "../src/agents.ts", "../src/plaza.ts"]
+  "include": ["src/**/*.ts"]
 }

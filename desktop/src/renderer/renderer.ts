@@ -1,5 +1,5 @@
 // Connect AI Desktop 렌더러 — 익스텐션 디자인 그대로. preload window.connect 로 통신.
-import { AGENTS } from '../../../src/agents';
+import { AGENTS } from '../agents';
 declare global { interface Window { connect: any; webkitSpeechRecognition: any; SpeechRecognition: any; } }
 const connect = window.connect;
 const $ = (id: string) => document.getElementById(id)!;

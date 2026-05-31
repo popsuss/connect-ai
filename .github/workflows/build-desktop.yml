@@ -16,7 +16,12 @@ jobs:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      # desktop/ 만 체크아웃 — 자체 완결(agents.ts·plaza.ts 포함)이라 루트 불필요.
+      # 익스텐션의 긴 경로 에셋(Windows 260자 초과)도 회피.
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: desktop
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'

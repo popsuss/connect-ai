@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import { runCompany, talkToMyAgent, ChatTurn } from './engine/company';
 import { detectTarget, chat, listModels } from './engine/llm';
 import { agentPrompt } from './engine/persona';
-import { joinPlaza, postPlazaMessage, setPlazaDbUrl, plazaConfigured, fetchMessages, PlazaSession, PlazaMessage } from '../../src/plaza';
+import { joinPlaza, postPlazaMessage, setPlazaDbUrl, plazaConfigured, fetchMessages, PlazaSession, PlazaMessage } from './plaza';
 
 interface Config { company: string; agentName: string; plazaEmoji: string; greeting: string; plazaDbUrl: string; llmBase?: string; llmModel?: string; voice: boolean; }
 const DEFAULTS: Config = { company: '1인 기업', agentName: '에이전트', plazaEmoji: '🖥️', greeting: '', plazaDbUrl: '', llmBase: '', llmModel: '', voice: true };
