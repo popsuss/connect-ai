@@ -2,7 +2,8 @@
 // 익스텐션의 _callAgentLLM 핵심 로직을 데스크톱용으로 추출·단순화.
 import axios from 'axios';
 
-export interface LlmTarget { base: string; model: string; engine: 'lmstudio' | 'ollama'; }
+export interface LlmTarget { base: string; model: string; engine: 'lmstudio' | 'ollama' | 'gemini'; key?: string; }
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/openai';
 
 const isLMStudio = (base: string) => /:1234(\/|$)/.test(base) || /lm[-_]?studio/i.test(base);
 
@@ -51,6 +52,10 @@ function rank(models: ModelInfo[]): ModelInfo[] {
 
 // 엔진 자동 감지 → 로드된 채팅 모델 우선 선택. 사용자가 base/model 지정 시 우선.
 export async function detectTarget(pref?: Partial<LlmTarget>): Promise<LlmTarget | null> {
+  // ☁️ Gemini 고성능 두뇌 — 모델이 gemini* 이고 키가 있으면 클라우드(OpenAI 호환)로
+  if (pref?.model && /^gemini/i.test(pref.model) && pref?.key) {
+    return { base: GEMINI_BASE, model: pref.model, engine: 'gemini', key: pref.key };
+  }
   const candidates = [pref?.base, 'http://127.0.0.1:1234', 'http://127.0.0.1:11434'].filter(Boolean) as string[];
   for (const base of candidates) {
     const p = await probe(base);
@@ -75,8 +80,26 @@ export async function listModels(pref?: Partial<LlmTarget>): Promise<{ base: str
   return null;
 }
 
+// 🧠 임베딩 — 두뇌 의미 검색용. LM Studio 에 임베딩 모델 있으면 사용, 없으면 null(키워드 폴백).
+let _embModel: string | null | undefined;
+export async function embed(base: string, text: string): Promise<number[] | null> {
+  const b = base || 'http://127.0.0.1:1234';
+  if (_embModel === undefined) {
+    try {
+      const r = await axios.get(`${b}/v1/models`, { timeout: 1500 });
+      const ids = (r.data?.data || []).map((x: any) => x.id);
+      _embModel = ids.find((id: string) => /embed|nomic|bge|gte|e5/i.test(id)) || null;
+    } catch { _embModel = null; }
+  }
+  if (!_embModel) return null;
+  try {
+    const r = await axios.post(`${b}/v1/embeddings`, { model: _embModel, input: (text || '').slice(0, 6000) }, { timeout: 15000 });
+    return r.data?.data?.[0]?.embedding || null;
+  } catch { return null; }
+}
+
 export interface ChatOpts { temperature?: number; onToken?: (t: string) => void; signal?: AbortSignal; frequencyPenalty?: number; presencePenalty?: number; }
-export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string; }
+export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string | any[]; }   // 배열 content = 비전(이미지) 지원
 
 // 한 번의 system+user 호출. onToken 주면 스트리밍.
 export async function chat(t: LlmTarget, system: string, user: string, opts: ChatOpts = {}): Promise<string> {
@@ -86,37 +109,59 @@ export async function chat(t: LlmTarget, system: string, user: string, opts: Cha
   ], opts);
 }
 
-// 멀티턴(대화 히스토리 포함) 호출 — 1인 에이전트가 직전 대화를 기억하게.
-export async function completeMessages(t: LlmTarget, messages: ChatMessage[], opts: ChatOpts = {}): Promise<string> {
-  const stream = !!opts.onToken;
+// 한 번의 모델 호출 결과 — text + 길이 한도로 잘렸는지(truncated)
+interface OneShot { text: string; truncated: boolean; }
 
-  if (t.engine === 'lmstudio') {
-    const url = `${t.base}/v1/chat/completions`;
+// 모델 1회 호출 (스트리밍/비스트리밍). finish_reason 'length' → truncated=true
+async function callOnce(t: LlmTarget, messages: ChatMessage[], opts: ChatOpts, stream: boolean): Promise<OneShot> {
+  if (t.engine === 'lmstudio' || t.engine === 'gemini') {
+    // OpenAI 호환 (LM Studio 로컬 / Gemini 클라우드)
+    const url = t.engine === 'gemini' ? `${t.base}/chat/completions` : `${t.base}/v1/chat/completions`;
+    const headers: any = t.key ? { Authorization: `Bearer ${t.key}` } : {};
     const body: any = { model: t.model, messages, temperature: opts.temperature ?? 0.6, stream };
     if (opts.frequencyPenalty != null) body.frequency_penalty = opts.frequencyPenalty;
     if (opts.presencePenalty != null) body.presence_penalty = opts.presencePenalty;
     if (!stream) {
-      const r = await axios.post(url, body, { timeout: 120000, signal: opts.signal as any });
-      return r.data?.choices?.[0]?.message?.content || '';
+      const r = await axios.post(url, body, { timeout: 180000, signal: opts.signal as any, headers });
+      const choice = r.data?.choices?.[0];
+      return { text: choice?.message?.content || '', truncated: choice?.finish_reason === 'length' };
     }
-    return streamSSE(url, body, opts.onToken!, opts.signal, (j) => j?.choices?.[0]?.delta?.content || '');
+    return streamSSE(url, body, opts.onToken!, opts.signal, headers);
   }
-
   // Ollama
   const url = `${t.base}/api/chat`;
   const body: any = { model: t.model, messages, stream, options: { temperature: opts.temperature ?? 0.6, num_predict: -1 } };
   if (opts.frequencyPenalty != null) body.options.repeat_penalty = 1 + opts.frequencyPenalty; // 0.6 → 1.6
   if (!stream) {
-    const r = await axios.post(url, body, { timeout: 120000, signal: opts.signal as any });
-    return r.data?.message?.content || '';
+    const r = await axios.post(url, body, { timeout: 180000, signal: opts.signal as any });
+    return { text: r.data?.message?.content || '', truncated: r.data?.done_reason === 'length' };
   }
   return streamNdjson(url, body, opts.onToken!, opts.signal);
 }
 
-// ── 스트리밍 파서 (Node response stream) ──
-async function streamSSE(url: string, body: any, onToken: (t: string) => void, signal: AbortSignal | undefined, pick: (j: any) => string): Promise<string> {
-  const res = await axios.post(url, body, { responseType: 'stream', timeout: 0, signal: signal as any });
-  let acc = '';
+// 멀티턴 호출 — 길이 한도로 잘리면 자동으로 "이어서 써"를 보내 끝까지 이어붙인다(최대 3회 이어쓰기).
+// 컨텍스트가 작거나 답이 길어 중간에 끊기는 현상을 구조적으로 막음.
+export async function completeMessages(t: LlmTarget, messages: ChatMessage[], opts: ChatOpts = {}): Promise<string> {
+  const stream = !!opts.onToken;
+  let full = '';
+  let msgs = messages;
+  for (let cont = 0; cont <= 3; cont++) {
+    if (opts.signal?.aborted) break;
+    const { text, truncated } = await callOnce(t, msgs, opts, stream);
+    full += text;
+    if (!truncated || !text) break;   // 정상 종료거나 더 안 나오면 끝
+    // 길이로 잘림 → 끊긴 지점부터 이어쓰기 요청 (스트리밍이면 onToken으로 계속 흘러나감)
+    msgs = [...messages,
+      { role: 'assistant', content: full },
+      { role: 'user', content: '바로 직전 답변이 길이 제한으로 중간에 끊겼다. 끊긴 지점에서 곧바로 이어서 계속 작성해라. 인사·서론·이미 쓴 내용 반복 없이 이어지는 부분만.' }];
+  }
+  return full;
+}
+
+// ── 스트리밍 파서 (Node response stream) — OpenAI SSE. finish_reason 'length' 감지 ──
+async function streamSSE(url: string, body: any, onToken: (t: string) => void, signal: AbortSignal | undefined, headers: any = {}): Promise<OneShot> {
+  const res = await axios.post(url, body, { responseType: 'stream', timeout: 0, signal: signal as any, headers });
+  let acc = '', truncated = false;
   await new Promise<void>((resolve, reject) => {
     let buf = '';
     res.data.on('data', (chunk: Buffer) => {
@@ -128,18 +173,23 @@ async function streamSSE(url: string, body: any, onToken: (t: string) => void, s
         if (!s.startsWith('data:')) continue;
         const payload = s.slice(5).trim();
         if (payload === '[DONE]') continue;
-        try { const tok = pick(JSON.parse(payload)); if (tok) { acc += tok; onToken(tok); } } catch { /* keep-alive */ }
+        try {
+          const ch = JSON.parse(payload)?.choices?.[0];
+          const tok = ch?.delta?.content || '';
+          if (tok) { acc += tok; onToken(tok); }
+          if (ch?.finish_reason === 'length') truncated = true;
+        } catch { /* keep-alive */ }
       }
     });
     res.data.on('end', resolve);
     res.data.on('error', reject);
   });
-  return acc;
+  return { text: acc, truncated };
 }
 
-async function streamNdjson(url: string, body: any, onToken: (t: string) => void, signal: AbortSignal | undefined): Promise<string> {
+async function streamNdjson(url: string, body: any, onToken: (t: string) => void, signal: AbortSignal | undefined): Promise<OneShot> {
   const res = await axios.post(url, body, { responseType: 'stream', timeout: 0, signal: signal as any });
-  let acc = '';
+  let acc = '', truncated = false;
   await new Promise<void>((resolve, reject) => {
     let buf = '';
     res.data.on('data', (chunk: Buffer) => {
@@ -149,11 +199,15 @@ async function streamNdjson(url: string, body: any, onToken: (t: string) => void
       for (const line of lines) {
         const s = line.trim();
         if (!s) continue;
-        try { const tok = JSON.parse(s)?.message?.content; if (tok) { acc += tok; onToken(tok); } } catch { /* partial */ }
+        try {
+          const j = JSON.parse(s);
+          const tok = j?.message?.content; if (tok) { acc += tok; onToken(tok); }
+          if (j?.done_reason === 'length') truncated = true;
+        } catch { /* partial */ }
       }
     });
     res.data.on('end', resolve);
     res.data.on('error', reject);
   });
-  return acc;
+  return { text: acc, truncated };
 }

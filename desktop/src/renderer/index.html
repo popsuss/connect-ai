@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; script-src 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: https:; media-src 'self' data: blob: https:; connect-src *; script-src 'self';" />
   <title>Connect AI</title>
   <!-- 익스텐션(assets/webview/sidebar.html) 디자인 그대로 -->
   <link rel="stylesheet" href="./extension-ui.css" />
@@ -23,26 +23,30 @@
       <div class="logo">✦</div>
       <span class="brand">Connect AI</span>
       <span class="brand-suffix" id="brandSuffix"></span>
+      <span class="hdr-clock" id="hdrClock"></span>
     </div>
     <div class="header-right">
-      <select id="modelSel" title="모델 선택"></select>
-      <button class="btn-icon" id="corporateBtn" title="1인 기업 모드 — 켜면 동료들이 함께 일합니다" style="opacity:.5">👔</button>
-      <button class="btn-icon" id="micBtn" title="음성 — 야 커넥트">🎙️</button>
+      <button class="btn-icon" id="officeBtn" title="가상 사무실 — 에이전트들이 일하는 모습">🏢</button>
+      <button class="btn-icon" id="brainBtn" title="지식 네트워크 — 단기/장기 기억">🧠</button>
       <button class="btn-icon" id="plazaBtn" title="AI Agent University">🏫</button>
+      <button class="btn-icon" id="manageBtn" title="관리 — 대시보드·서비스·연동·API">🗂️</button>
       <button class="btn-icon" id="newChatBtn" title="새 대화">+</button>
       <button class="btn-icon" id="settingsBtn" title="설정">⚙️</button>
     </div>
   </div>
   <div class="thinking-bar" id="thinkingBar"></div>
 
-  <!-- 채팅 (익스텐션 .chat 그대로) -->
-  <div class="chat" id="chat"></div>
+  <!-- 🧠 두뇌 비주얼 (메인) + 대화 오버레이 -->
+  <div class="main-stage" id="mainStage">
+    <canvas id="brainGlobe" class="brain-bg"></canvas>
+    <div class="chat" id="chat"></div>
+  </div>
 
   <!-- 입력 (익스텐션 .input-wrap/.input-box 그대로) -->
   <div class="input-wrap"><div class="input-box">
     <textarea id="input" rows="1" placeholder="무엇을 만들어 드릴까요?"></textarea>
     <div class="input-footer">
-      <span class="input-hint" id="inputHint">Enter 전송 · Shift+Enter 줄바꿈 · "야 커넥트" 음성</span>
+      <span class="input-hint" id="inputHint">Enter 전송 · Shift+Enter 줄바꿈</span>
       <div class="input-btns">
         <button class="stop-btn" id="stopBtn" title="생성 중단" hidden>■</button>
         <button class="send-btn" id="sendBtn" title="전송 (Enter)">↑</button>
@@ -95,26 +99,185 @@
   <div class="overlay hidden" id="settingsPanel">
     <div class="overlay-card">
       <div class="overlay-head">⚙️ 설정 <button class="overlay-x" data-close="settingsPanel">✕</button></div>
-      <label>에이전트 인사말 <span class="muted small">(비우면 기본 · {name}=이름)</span><input id="cfgGreeting" placeholder="안녕하세요, {name}입니다. 무엇을 도와드릴까요?" /></label>
-      <label>대학 DB URL (Firebase RTDB)<input id="cfgDbUrl" placeholder="https://...firebasedatabase.app" /></label>
-      <label>LLM 주소 (비우면 자동 감지)<input id="cfgLlmBase" placeholder="http://127.0.0.1:1234 또는 11434" /></label>
+      <div class="set-section">🤖 내 비서</div>
+      <div class="row2">
+        <label>에이전트 이름 <span class="muted small">(이렇게 불러요)</span><input id="cfgAgentName" placeholder="예) 자비스, 제이 부하" /></label>
+        <label>나를 부르는 호칭 <span class="muted small">(비서가 날 이렇게 불러요)</span><input id="cfgUserTitle" placeholder="예) 사장님, 대표님, 제이님" /></label>
+      </div>
+      <label>🤖 AI 모델 <span class="muted small">(로컬에서 로드된 모델 자동)</span><select id="modelSel"></select></label>
+      <label>에이전트 인사말 <span class="muted small">(비우면 기본 · {name}=이름 · {title}=내 호칭)</span><input id="cfgGreeting" placeholder="{title}, {name}입니다. 무엇을 도와드릴까요?" /></label>
       <label class="row"><input type="checkbox" id="cfgVoice" /> 음성 응답(TTS) 켜기</label>
+      <label class="row"><input type="checkbox" id="cfgJarvis" /> 🎙️ AI 보이스 모드 (낮은 톤 + 활성화 효과음)</label>
+      <label>🔊 목소리<select id="cfgVoicePick">
+        <option value="edge:ko-KR-SunHiNeural">✨ 선희 — 한국어 여성 (자연스러움·무료)</option>
+        <option value="edge:ko-KR-InJoonNeural">인준 — 한국어 남성 (무료)</option>
+        <option value="edge:ko-KR-HyunsuMultilingualNeural">현수 — 한국어 남성 (무료)</option>
+        <option value="edge:ko-KR-JiMinNeural">지민 — 한국어 여성 (무료)</option>
+        <option value="edge:en-US-AriaNeural">Aria — 영어 여성 (무료)</option>
+        <option value="edge:ja-JP-NanamiNeural">Nanami — 일본어 (무료)</option>
+        <option value="browser">기본 OS 음성 (오프라인)</option>
+        <option value="qwen:Sohee">Sohee — 한국어 (Qwen3-TTS·키 필요)</option>
+      </select></label>
+      <div class="muted small" style="margin-top:-2px;line-height:1.5">✨ <b>선희</b>(MS Edge 신경망)는 키 없이 무료인데 진짜 자연스러워요. 인터넷만 있으면 됩니다.</div>
+      <label class="row"><input type="checkbox" id="cfgTools" /> 🛠️ 파일 도구 — 내 파일 읽기·쓰기 (진짜 에이전트)</label>
+      <label class="row"><input type="checkbox" id="cfgBrainViz" checked /> 🧠 두뇌 비주얼 — 배경 신경망 애니메이션</label>
+      <label class="row"><input type="checkbox" id="cfgBriefing" checked /> 📋 아침 브리핑 받기 <span class="muted small">매일</span> <input type="time" id="cfgBriefingTime" value="09:00" /> <span class="muted small">자동</span></label>
+      <div class="oc-row" style="margin:2px 0 8px"><button id="briefNowBtn" type="button" class="oc-primary">📋 지금 브리핑 받기</button></div>
+      <label class="row"><input type="checkbox" id="cfgAutoSync" checked /> 🔄 지식 자동 동기화 (GitHub) <span class="muted small">— 쌓일 때마다 자동 커밋</span></label>
+      <details class="settings-adv"><summary class="muted small">고급 설정</summary>
+        <label>🚀 내 학습 노트북 URL <span class="muted small">(있으면 자동생성 대신 이걸로 — Colab/GitHub)</span><input id="cfgTrainUrl" placeholder="https://colab.research.google.com/..." /></label>
+        <label class="row"><input type="checkbox" id="cfgSafeMode" /> 🛡️ 안전 모드 — GPU 가속 끄기 <span class="muted small">(흰 화면·바로 종료될 때)</span></label>
+        <div class="oc-row" style="margin:2px 0 8px"><button id="relaunchBtn" type="button" class="oc-primary">↻ 앱 재시작</button><button id="diagBtn" type="button" class="oc-primary">📄 진단 로그</button></div>
+        <label>🎙️ 기본 음성 종류 <span class="muted small">(기본 목소리일 때 OS 음성)</span><select id="cfgVoiceName"></select></label>
+        <label>🖥️ 로컬 Qwen3-TTS 서버 <span class="muted small">(있으면 Qwen 음성을 로컬·무료로)</span><input id="cfgTtsLocalUrl" placeholder="http://127.0.0.1:7920" /></label>
+        <label>대학 DB URL (Firebase RTDB)<input id="cfgDbUrl" placeholder="https://...firebasedatabase.app" /></label>
+        <label>LLM 주소 (비우면 자동 감지)<input id="cfgLlmBase" placeholder="http://127.0.0.1:1234 또는 11434" /></label>
+      </details>
+      <label>📁 작업 폴더 <span class="muted small">(에이전트가 파일 만들 기본 위치)</span>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <input id="cfgWorkspace" readonly style="flex:1" />
+          <button id="pickWorkspace" type="button" class="oc-primary" style="white-space:nowrap">폴더 선택</button>
+        </div>
+      </label>
       <button id="saveCfg" class="oc-primary">저장</button>
-      <p class="muted small">· 이름·회사·아바타 → 🏫 대학 <b>명찰</b>에서<br>· 모델 → 상단 <b>드롭다운</b>에서</p>
+      <p class="muted small">· 이름·회사·아바타 → 🏫 대학 <b>명찰</b>에서 설정</p>
     </div>
   </div>
 
-  <!-- 1인 기업 모드 비밀번호 -->
-  <div class="overlay hidden" id="pwPanel">
-    <div class="overlay-card" style="max-width:380px">
-      <div class="overlay-head">🔒 1인 기업 모드 <button class="overlay-x" data-close="pwPanel">✕</button></div>
-      <p class="muted">비밀번호를 입력하세요.</p>
-      <input id="pwInput" type="password" inputmode="numeric" placeholder="••••" autocomplete="off" />
-      <div id="pwMsg" class="muted" style="color:var(--red);min-height:14px"></div>
-      <button id="pwOk" class="oc-primary">잠금 해제</button>
+  <!-- 🗂️ 관리 허브 (대시보드·서비스·연동) -->
+  <div class="overlay hidden" id="managePanel">
+    <div class="overlay-card manage-card">
+      <div class="overlay-head">🗂️ 관리 <button class="overlay-x" data-close="managePanel">✕</button></div>
+      <div class="manage-tabs">
+        <button class="mtab active" data-mtab="dash">📊 대시보드</button>
+        <button class="mtab" data-mtab="svc">🗂️ 내 서비스</button>
+        <button class="mtab" data-mtab="integ">🔌 연동</button>
+        <button class="mtab" data-mtab="mcp">🧩 MCP</button>
+      </div>
+      <div class="manage-body">
+        <!-- 대시보드 -->
+        <div class="msec" id="msec-dash">
+          <button id="openRevenueBtn" class="oc-primary" style="width:100%;margin-bottom:12px;font-size:14px;padding:12px">💎 비즈니스 리포트 열기</button>
+          <div class="dash-grid" id="dashGrid"></div>
+          <div class="am-head">🧭 내 비즈니스 인텔리전스 <span class="muted small">— 등록 서비스를 실시간 파악</span> <button id="svcReviewBtn" class="oc-primary" style="float:right;padding:4px 10px;font-size:11px">🔍 전체 점검</button></div>
+          <div class="svc-intel" id="svcIntel"></div>
+          <div class="am-head">📺 내 유튜브 채널 <span class="muted small">— 실시간</span></div>
+          <div class="yt-dash" id="ytDash"></div>
+          <div class="am-head">👥 우리 직원 에이전트 <span class="muted small">— 클릭하면 상세</span></div>
+          <div class="agent-matrix" id="agentMatrix"></div>
+          <div class="am-head">📋 태스크 보드 <span class="muted small">— 할 일 (에이전트가 자동으로 쌓기도 함)</span></div>
+          <div class="task-add">
+            <input id="taskInput" placeholder="할 일 추가 (예: 썸네일 시안 3개 만들기)" autocomplete="off" />
+            <button id="taskAddBtn" class="oc-primary">+ 추가</button>
+          </div>
+          <div class="task-board" id="taskBoard"></div>
+          <div class="am-head">✅ 승인 큐 <span class="muted small">— 에이전트가 중요한 일 전에 결재 요청</span></div>
+          <div class="apr-board" id="aprBoard"></div>
+        </div>
+        <!-- 내 서비스 -->
+        <div class="msec hidden" id="msec-svc">
+          <div class="svc-add">
+            <input id="svcName" placeholder="서비스 이름 (예: 내 유튜브 채널)" autocomplete="off" />
+            <input id="svcUrl" placeholder="웹사이트 주소 https://..." autocomplete="off" />
+            <input id="svcDesc" placeholder="한 줄 설명 (선택)" autocomplete="off" />
+            <button id="svcAddBtn" class="oc-primary">+ 등록</button>
+          </div>
+          <div class="muted small">💡 등록한 서비스는 에이전트가 인지해서 답변·작업에 활용합니다.</div>
+          <div class="svc-list" id="svcList"></div>
+        </div>
+        <!-- 연동 (API) — 서비스 정의 기반, 익스텐션과 동일 -->
+        <div class="msec hidden" id="msec-integ">
+          <div class="muted small" style="margin-bottom:10px">🔌 모든 외부 연결을 한 곳에서 — 자격증명 입력 후 각 카드의 <b>저장</b>을 누르세요.</div>
+          <div class="api-grid" id="apiGrid"></div>
+        </div>
+        <!-- 🧩 MCP — 외부 도구 서버(Cursor/Antigravity와 동일 형식) -->
+        <div class="msec hidden" id="msec-mcp">
+          <div class="muted small" style="margin-bottom:8px;line-height:1.6">🧩 <b>MCP 서버</b>를 붙이면 에이전트가 외부 도구를 씁니다 — 예: <b>Stitch</b>(디자인 생성)·GitHub·웹검색 등. Cursor/Antigravity와 <b>같은 JSON 형식</b>으로 붙여넣으세요. (원격 URL은 Node 불필요, 로컬 command는 Node 필요)</div>
+          <textarea id="mcpConfig" spellcheck="false" placeholder='{
+  "mcpServers": {
+    "stitch": {
+      "url": "https://stitch.googleapis.com/mcp",
+      "headers": { "X-Goog-Api-Key": "YOUR-API-KEY" }
+    }
+  }
+}'></textarea>
+          <div class="oc-row" style="margin-top:8px"><button id="mcpSaveBtn" class="oc-primary">💾 저장</button><button id="mcpTestBtn" class="oc-primary">🔌 연결 테스트</button><span class="muted" id="mcpStatus"></span></div>
+          <div class="mcp-tools" id="mcpTools"></div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- 🏢 사무실 (1인 기업 모드 시각화) -->
+  <div class="overlay hidden" id="officePanel">
+    <div class="overlay-card office-card">
+      <div class="overlay-head">🏢 <span id="officeName">우리 회사</span> 사무실 <span class="cls-count" id="officeStatus">대기 중</span><button class="overlay-x" data-close="officePanel">✕</button></div>
+      <div class="voffice" id="voffice"></div>
+      <div class="confer-feed" id="conferFeed"></div>
+      <div class="muted" style="text-align:center;font-size:11px">💬 동료를 클릭하면 상세 정보 · 큰 일을 맡기면 모였다가 → 자리로 걸어가 일하고 → 회의합니다</div>
+    </div>
+  </div>
+
+  <!-- 👤 에이전트 상세 (사무실에서 캐릭터 클릭) -->
+  <div class="overlay hidden" id="agentPanel">
+    <div class="overlay-card" style="max-width:440px">
+      <div class="overlay-head"><span id="agHeadName">에이전트</span><button class="overlay-x" data-close="agentPanel">✕</button></div>
+      <div id="agentBody"></div>
+    </div>
+  </div>
+
+  <!-- 🧠 지식 네트워크 (단기/장기 기억) -->
+  <div class="overlay hidden" id="brainPanel">
+    <div class="overlay-card brain-card">
+      <div class="overlay-head">🧠 지식 네트워크 <span class="cls-count" id="brainCount"></span><button class="overlay-x" data-close="brainPanel">✕</button></div>
+      <div class="manage-tabs">
+        <button class="btab active" data-btab="short">⚡ 단기 기억</button>
+        <button class="btab" data-btab="long">🧬 장기 기억 <span class="beta">BETA</span></button>
+      </div>
+      <!-- 단기 기억 = GitHub 동기화 -->
+      <div class="bsec" id="bsec-short">
+        <div class="mem-bar">
+          <div class="mem-info">⚡ 단기 기억 = <b>GitHub</b> <span class="mem-repo" id="ghRepo">미연결</span></div>
+          <div class="mem-acts"><button id="ghPushBtn" class="oc-primary">⬆ 동기화</button><button id="ghPullBtn" class="oc-primary">⬇ 불러오기</button></div>
+        </div>
+        <div class="mem-status" id="ghStatus"></div>
+        <div class="oc-row">
+          <input id="brainInput" placeholder="에이전트에게 기억시킬 지식 (예: 내 채널 주제는 AI 교육이다)" autocomplete="off" />
+          <button id="brainAddBtn" class="oc-primary">+ 기억</button>
+        </div>
+        <div id="brainGraph" class="brain-graph"></div>
+        <div class="muted" style="font-size:11px;text-align:center">노드 = 지식 · 선 = 의미 연결 · 끌어서 움직임 · GitHub 레포에 버전관리로 동기화 (토큰/레포는 🗂️ 연동에서)</div>
+        <div class="brain-notes" id="brainNotes"></div>
+      </div>
+      <!-- 장기 기억 = HuggingFace 학습 -->
+      <div class="bsec hidden" id="bsec-long">
+        <div class="muted" style="font-size:12px;line-height:1.6">🧬 <b>장기 기억 = HuggingFace</b> — 쌓인 지식을 <b>데이터셋으로 올리고 모델에 파인튜닝</b>해서 가중치에 체득시킵니다. 단기가 "메모"라면 장기는 "몸에 밴" 지식. 학습된 모델은 설정에서 회사 뇌로 지정.</div>
+        <div class="mem-bar">
+          <div class="mem-info">🧬 데이터셋 <span class="mem-repo" id="hfRepo">미연결</span></div>
+          <div class="mem-acts"><button id="hfUploadBtn" class="oc-primary">🤗 업로드</button><button id="hfTrainBtn" class="oc-primary">🚀 학습 시작 (Colab)</button><button id="hfExportBtn" class="oc-primary">📦 로컬 JSONL</button></div>
+        </div>
+        <div class="mem-status" id="hfStatus"></div>
+        <ol class="muted small" style="line-height:1.7;padding-left:18px;margin:4px 0">
+          <li><b>🤗 업로드</b> — 지식을 HF 데이터셋으로 올림</li>
+          <li><b>🚀 학습 시작</b> — 미리 채운 Unsloth 노트북을 만들어 <b>Colab(무료 GPU)에서 원클릭</b>으로 엶 → "모두 실행"</li>
+          <li>나온 <code>.gguf</code> 모델을 LM Studio/Ollama에 올리고 ⚙️ 설정에서 선택 → <b>장기기억 완성</b></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧠 매트릭스 지식 주입 FX -->
+  <div class="inject-fx hidden" id="injectFx">
+    <canvas id="injectRain"></canvas>
+    <div class="inject-hud">
+      <div class="ih-title">🧠 지식 주입 <span class="ih-en">KNOWLEDGE INJECTION</span></div>
+      <div class="ih-sub" id="ihSub">INITIALIZING…</div>
+      <div class="ih-bar"><div class="ih-fill" id="ihFill"></div></div>
+      <div class="ih-text" id="ihText"></div>
+    </div>
+  </div>
+
+  <script src="./force-graph.min.js"></script>
   <script src="../../out/renderer.js"></script>
 </body>
 </html>
