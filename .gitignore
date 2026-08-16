@@ -7,3 +7,5 @@ preview.html
 releases/
 .env
 *.bak.*
+# Repomix outputs
+repomix-output.*
